@@ -77,7 +77,7 @@ extern "C" {
 #define AIPL_CONVERT_RGBA4444       0
 #define AIPL_CONVERT_RGBA5551       0
 #define AIPL_CONVERT_RGB888         0
-#define AIPL_CONVERT_RGB565         0
+#define AIPL_CONVERT_RGB565         TO_RGB888
 #define AIPL_CONVERT_YV12           0
 #define AIPL_CONVERT_I420           0
 #define AIPL_CONVERT_I422           0

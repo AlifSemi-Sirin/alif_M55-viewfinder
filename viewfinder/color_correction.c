@@ -16,7 +16,7 @@
 #include <math.h>
 
 //#include "base_def.h"
-#include "image_processing.h"
+#define RGB_BYTES 3
 
 #if __ARM_FEATURE_MVE & 1
 #include <arm_mve.h>

@@ -5,7 +5,6 @@ project:
       files:
         - file: main.c
         - file: bayer2rgb.c
-        - file: image_processing.c
         - file: color_correction.c
         - file: video_alloc.c
         - file: cpu_cache.c
@@ -97,4 +96,4 @@ project:
     - component: AlifSemiconductor::Graphics:Acceleration:Dave2d
     - component: AlifSemiconductor::Graphics:Acceleration:Helium
     - component: AlifSemiconductor::Graphics:AIPL:Color correction
-    # - component: AlifSemiconductor::Graphics:AIPL:Color conversion
+    - component: AlifSemiconductor::Graphics:AIPL:Color conversion

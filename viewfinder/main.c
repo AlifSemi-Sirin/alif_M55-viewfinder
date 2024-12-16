@@ -17,10 +17,11 @@
 #include "Driver_CDC200.h" // Display
 #include "board.h"
 #include "bayer.h"
-#include "image_processing.h"
 #include "power.h"
 #include "dave_d0lib.h"
 #include "aipl_image.h"
+#include "aipl_resize.h"
+#include "aipl_color_conversion.h"
 
 #include "se_services_port.h"
 
@@ -79,9 +80,10 @@ extern ARM_DRIVER_CPI Driver_CPI;
 static ARM_DRIVER_CPI *CAMERAdrv = &Driver_CPI;
 
 /* LCD */
+#define PIXEL_SIZE                3
 #define DISPLAY_FRAME_WIDTH       (RTE_PANEL_HACTIVE_TIME)
 #define DISPLAY_FRAME_HEIGHT      (RTE_PANEL_VACTIVE_LINE)
-static uint8_t lcd_image[DISPLAY_FRAME_HEIGHT][DISPLAY_FRAME_WIDTH][RGB_BYTES] __attribute__((section(".bss.lcd_frame_buf"))) = {0};
+static uint8_t lcd_image[DISPLAY_FRAME_HEIGHT][DISPLAY_FRAME_WIDTH][PIXEL_SIZE] __attribute__((section(".bss.lcd_frame_buf"))) = {0};
 extern ARM_DRIVER_CDC200 Driver_CDC200;
 static ARM_DRIVER_CDC200 *CDCdrv = &Driver_CDC200;
 
@@ -275,14 +277,15 @@ int main(void)
 
     // Prepare buffers
 #if CAM_USE_RGB565
-    aipl_image_t image = {
+    aipl_image_t image_rgb565 = {
         .data = camera_buffer,
         .pitch = CAM_FRAME_WIDTH,
         .width = CAM_FRAME_WIDTH,
         .height = CAM_FRAME_HEIGHT,
         .format = AIPL_COLOR_RGB565
     };
-#else
+#endif
+
     aipl_image_t image;
     if (aipl_image_create(&image, CAM_FRAME_WIDTH,
                           CAM_FRAME_WIDTH, CAM_FRAME_HEIGHT,
@@ -291,7 +294,6 @@ int main(void)
         printf("\r\nNot enough memory to allocate input image buffer\r\n");
         __BKPT(0);
     }
-#endif
 
     // Capture frames in loop
     printf("\r\n Let's Start Capturing Camera Frame...\r\n");
@@ -318,7 +320,16 @@ int main(void)
 
 // ARX3A0 camera uses bayer output
 // MT9M114 can use bayer or RGB565 depending on RTE config
-#if !CAM_USE_RGB565
+#if CAM_USE_RGB565
+            uint32_t convert_time = ARM_PMU_Get_CCNTR();
+            aipl_error_t ret = aipl_color_convert_img(&image_rgb565, &image);
+            if (ret != AIPL_ERR_OK)
+            {
+                printf("\r\nColor conversion error: %s\r\n",
+                       aipl_error_str(ret));
+            }
+            convert_time = ARM_PMU_Get_CCNTR() - convert_time;
+#else
             uint32_t bayer_time = ARM_PMU_Get_CCNTR();
             dc1394_bayer_Simple(camera_buffer, image.data, CAM_FRAME_WIDTH, CAM_FRAME_HEIGHT, BAYER_FORMAT);
             bayer_time = ARM_PMU_Get_CCNTR() - bayer_time;
@@ -337,22 +348,26 @@ int main(void)
             const int rescaleHeight = (int)(CAM_FRAME_HEIGHT * (float)rescaleWidth / CAM_FRAME_WIDTH);
 
             uint32_t resize_time = ARM_PMU_Get_CCNTR();
-            resize_image(image.data,
-                         CAM_FRAME_WIDTH,
-                         CAM_FRAME_HEIGHT,
-                         (uint8_t*)lcd_image,
-                         rescaleWidth,
-                         rescaleHeight,
-                         CAM_USE_RGB565 ? RGB565_BYTES : RGB_BYTES,
-                         CAM_COLOR_CORRECTION == 0); // Swap to BGR in resize phase when using MT9M114
-
+            ret = aipl_resize(image.data, lcd_image, CAM_FRAME_WIDTH, CAM_FRAME_WIDTH,
+                              CAM_FRAME_HEIGHT, AIPL_COLOR_RGB888,
+                              rescaleWidth, rescaleHeight,
+                              true);
+            if (ret != AIPL_ERR_OK)
+            {
+                printf("\r\nImage resize error: %s\r\n",
+                       aipl_error_str(ret));
+            }
             resize_time = ARM_PMU_Get_CCNTR() - resize_time;
 
             if (clock() - print_ts >= PRINT_INTERVAL_CLOCKS) {
                 print_ts = clock();
                 printf("Frame capture took %.3fms\r\n", capture_time * 1000.0f / SystemCoreClock);
 
-#if !CAM_USE_RGB565
+#if CAM_USE_RGB565
+                float convert_time_s = (float)convert_time / SystemCoreClock;
+                printf("RGB565 to RGB888 conversion %.3fms (throughput=%.2fMpix/s)\r\n", convert_time_s * 1000.0f,
+                                                                                        CAM_MPIX / convert_time_s);
+#else
                 float bayer_time_s = (float)bayer_time / SystemCoreClock;
                 printf("Bayer conversion %.3fms (throughput=%.2fMpix/s)\r\n", bayer_time_s * 1000.0f,
                                                                             CAM_MPIX / bayer_time_s);
