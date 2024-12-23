@@ -294,7 +294,7 @@ int main(void)
     aipl_image_t image;
     if (aipl_image_create(&image, CAM_FRAME_WIDTH,
                           CAM_FRAME_WIDTH, CAM_FRAME_HEIGHT,
-                          AIPL_COLOR_RGB888) != AIPL_ERR_OK)
+                          AIPL_COLOR_BGR888) != AIPL_ERR_OK)
     {
         printf("\r\nNot enough memory to allocate input image buffer\r\n");
         __BKPT(0);
