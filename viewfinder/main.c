@@ -16,12 +16,12 @@
 #include "Driver_CPI.h"    // Camera
 #include "Driver_CDC200.h" // Display
 #include "board.h"
-#include "bayer.h"
 #include "power.h"
 #include "dave_d0lib.h"
 #include "aipl_image.h"
 #include "aipl_resize.h"
 #include "aipl_color_conversion.h"
+#include "aipl_bayer.h"
 
 #include "se_services_port.h"
 
@@ -46,7 +46,7 @@ static void uart_callback(uint32_t event)
 #define PRINT_INTERVAL_CLOCKS (PRINT_INTERVAL_SEC * CLOCKS_PER_SEC)
 extern uint32_t SystemCoreClock;
 
-#define BAYER_FORMAT DC1394_COLOR_FILTER_GRBG
+#define BAYER_FORMAT AIPL_COLOR_FILTER_GRBG
 
 /* Camera Controller Resolution. */
 #if RTE_Drivers_CAMERA_SENSOR_MT9M114
@@ -55,6 +55,11 @@ extern uint32_t SystemCoreClock;
     #define CAM_FRAME_HEIGHT       (720)
     #define CAM_COLOR_CORRECTION   (0)
     #define CAM_USE_RGB565         (1)
+#elif (RTE_MT9M114_CAMERA_SENSOR_MIPI_IMAGE_CONFIG == 1)
+    #define CAM_FRAME_WIDTH        (1280)
+    #define CAM_FRAME_HEIGHT       (720)
+    #define CAM_COLOR_CORRECTION   (0)
+    #define CAM_USE_RGB565         (0)
 #else
     #error "Unsupported MT9M114 configuration"
 #endif
@@ -331,7 +336,9 @@ int main(void)
             convert_time = ARM_PMU_Get_CCNTR() - convert_time;
 #else
             uint32_t bayer_time = ARM_PMU_Get_CCNTR();
-            dc1394_bayer_Simple(camera_buffer, image.data, CAM_FRAME_WIDTH, CAM_FRAME_HEIGHT, BAYER_FORMAT);
+            aipl_error_t ret = aipl_bayer_decoding_bgr888(camera_buffer, image.data,
+                                                          CAM_FRAME_WIDTH, CAM_FRAME_HEIGHT,
+                                                          BAYER_FORMAT, AIPL_BAYER_METHOD_SIMPLE);
             bayer_time = ARM_PMU_Get_CCNTR() - bayer_time;
 #endif
 
@@ -349,7 +356,7 @@ int main(void)
 
             uint32_t resize_time = ARM_PMU_Get_CCNTR();
             ret = aipl_resize(image.data, lcd_image, CAM_FRAME_WIDTH, CAM_FRAME_WIDTH,
-                              CAM_FRAME_HEIGHT, AIPL_COLOR_RGB888,
+                              CAM_FRAME_HEIGHT, AIPL_COLOR_BGR888,
                               rescaleWidth, rescaleHeight,
                               true);
             if (ret != AIPL_ERR_OK)
