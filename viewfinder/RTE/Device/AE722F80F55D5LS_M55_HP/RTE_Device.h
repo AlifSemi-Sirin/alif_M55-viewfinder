@@ -734,7 +734,7 @@
 //     <4=>   320x240_RGB565
 //     <5=>   320x320_RGB565
 // <i> Default: 0
-#define RTE_MT9M114_CAMERA_SENSOR_MIPI_IMAGE_CONFIG                3
+#define RTE_MT9M114_CAMERA_SENSOR_MIPI_IMAGE_CONFIG                1
 
 // <o> select MT9M114 MIPI number of lanes in DPHY
 // <i> defines select MT9M114 MIPI number of lanes in DPHY.
@@ -8658,7 +8658,7 @@
 // <i> Defines Interrupt priority for GPIO5_PIN7.
 // <i> Default: 0
 #define RTE_GPIO5_PIN7_IRQ_PRIORITY     0
-#endif 
+#endif
 // </e> GPIO5
 
 // <e> GPIO6
@@ -9144,7 +9144,7 @@
 // <i> Defines Interrupt priority for GPIO11_PIN7.
 // <i> Default: 0
 #define RTE_GPIO11_PIN7_IRQ_PRIORITY     0
-#endif 
+#endif
 // </e> GPIO11
 
 // <e> GPIO12
