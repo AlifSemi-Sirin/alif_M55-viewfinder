@@ -139,8 +139,8 @@ aipl_image_t camera_post_capture_process(void) {
     // MT9M114 can use bayer or RGB565 depending on RTE config
     // Convert raw image to RGB565 buffer using debayering method
     aipl_error_t aipl_ret = aipl_bayer_decoding(camera_raw_buffer, cam_image.data,
-                                                cam_image.width, cam_image.height,
-                                                CAM_BAYER_FORMAT, AIPL_BAYER_METHOD_SIMPLE,
+                                                cam_image.width, cam_image.width,
+                                                cam_image.height, CAM_BAYER_FORMAT,
                                                 AIPL_COLOR_RGB565);
     if (aipl_ret != AIPL_ERR_OK)
     {
